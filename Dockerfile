@@ -1,23 +1,18 @@
-FROM ubuntu:20.04
-LABEL maintainer="wingnut0310 <wingnut0310@gmail.com>"
+FROM ubuntu:22.04
 
-ENV LANG en_US.UTF-8
-ENV LANGUAGE en_US:en
-ENV GOTTY_TAG_VER v1.0.1
+# Install dependencies
+RUN apt update && \
+    apt install -y software-properties-common wget curl git openssh-client tmate python3 && \
+    apt clean
 
-RUN apt-get -y update && \
-    apt-get install -y curl && \
-    curl -sLk https://github.com/yudai/gotty/releases/download/${GOTTY_TAG_VER}/gotty_linux_amd64.tar.gz \
-    | tar xzC /usr/local/bin && \
-    apt-get purge --auto-remove -y curl && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists*
+# Create a dummy index page to keep the service alive
+RUN mkdir -p /app && echo "Tmate Session Running..." > /app/index.html
+WORKDIR /app
 
+# Expose a fake web port to trick Railway into keeping container alive
+EXPOSE 6080
 
-COPY /run_gotty.sh /run_gotty.sh
-
-RUN chmod 744 /run_gotty.sh
-
-EXPOSE 8080
-
-CMD ["/bin/bash","/run_gotty.sh"]
+# Start a dummy Python web server to keep Railway service active
+# and start tmate session
+CMD python3 -m http.server 6080 & \
+    tmate -F
